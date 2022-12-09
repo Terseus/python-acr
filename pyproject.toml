@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acr"
+description = "Command line utility to interact with the ACR122U card reader"
+urls = {homepage = "https://github.com/Terseus/python-acr/"}
+authors = [
+    {name = "David Caro", email = "terseus@fastmail.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dynamic = ["readme", "dependencies", "version"]
+keywords = ["ACR122U", "cmd", "pcsclite"]
+
+[tool.setuptools]
+packages = ["acr"]
+
+# Taken from https://github.com/pypa/setuptools/blob/d138ec08efc2dbaebb8752e215e324f38bd807a2/setuptools/tests/config/test_pyprojecttoml.py#L68
+[tool.setuptools.dynamic.readme]
+file = ["README.md"]
+content-type = "text/markdown"
+
+[tool.setuptools_scm]
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+
+[tool.coverage.run]
+branch = true
+source = ["acr/"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+line_length = 88
+
+[tool.mypy]
+files = [
+    "acr/",
+    "tests/",
+]
