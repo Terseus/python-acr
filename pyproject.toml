@@ -20,6 +20,15 @@ classifiers = [
 dynamic = ["readme", "dependencies", "version"]
 keywords = ["ACR122U", "cmd", "pcsclite"]
 
+[project.scripts]
+acr = "acr.acr:main"
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-cov"
+]
+
 [tool.setuptools]
 packages = ["acr"]
 
