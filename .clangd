@@ -1,0 +1,6 @@
+---
+CompileFlags:
+  Add: [-I/home/terseus/.pyenv/versions/3.10.5/include/python3.10]
+
+...
+# vim: set filetype=yaml:

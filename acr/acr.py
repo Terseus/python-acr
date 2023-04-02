@@ -1,2 +1,5 @@
+import _libacr
+
+
 def main():
-    print("Hello world!")
+    _libacr.show_hello_world()
