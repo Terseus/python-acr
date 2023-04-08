@@ -3,9 +3,8 @@
 #include <stdio.h>
 #include <winscard.h>
 
-#define PCSC_ERROR(source, err)                                                \
-    PyErr_Format(PcscError, "PCSC error from " #source ": %ld: %s", err,       \
-                 pcsc_stringify_error(err))
+#define PCSC_ERROR(source, err)                                                                    \
+    PyErr_Format(PcscError, "PCSC error from " #source ": %ld: %s", err, pcsc_stringify_error(err))
 
 typedef struct {
     // clang-format off
@@ -24,8 +23,7 @@ void PcscConnection_dealloc(PcscConnection *self) {
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
-static PyObject *PcscConnection_new(PyTypeObject *type, PyObject *args,
-                                    PyObject *kwargs) {
+static PyObject *PcscConnection_new(PyTypeObject *type, PyObject *args, PyObject *kwargs) {
     PcscConnection *self = NULL;
     self = (PcscConnection *)type->tp_alloc(type, 0);
     if (self == NULL) {
@@ -33,8 +31,7 @@ static PyObject *PcscConnection_new(PyTypeObject *type, PyObject *args,
     }
 
     self->raw_context = 0;
-    LONG err =
-        SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &self->raw_context);
+    LONG err = SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &self->raw_context);
     if (err != SCARD_S_SUCCESS) {
         Py_DECREF(self);
         PCSC_ERROR("SCardEstablishContext", err);
@@ -44,8 +41,7 @@ static PyObject *PcscConnection_new(PyTypeObject *type, PyObject *args,
     return (PyObject *)self;
 }
 
-static PyObject *PcscConnetion_show_hello_world(PyObject *self,
-                                                PyObject *Py_UNUSED(ignored)) {
+static PyObject *PcscConnetion_show_hello_world(PyObject *self, PyObject *Py_UNUSED(ignored)) {
     fprintf(stdout, "Hello world!\n");
     Py_RETURN_NONE;
 }
@@ -83,10 +79,10 @@ static struct PyModuleDef _LibacrModule = {
     .m_name = "_libacr",
     .m_doc = NULL,
     .m_size =
-        -1, /* size for global state, -1 makes this module unsafe for use in
-              sub-interpreters, see
-              https://docs.python.org/3/c-api/module.html?highlight=pymoduledef#c.PyModuleDef.m_size
-              */
+        -1,                      /* size for global state, -1 makes this module unsafe for use in
+                                   sub-interpreters, see
+                                   https://docs.python.org/3/c-api/module.html?highlight=pymoduledef#c.PyModuleDef.m_size
+                                   */
     .m_methods = _LibacrMethods, /* Methods exported */
 };
 
@@ -112,8 +108,7 @@ PyMODINIT_FUNC PyInit__libacr(void) {
     }
 
     Py_INCREF(&PcscConnectionType);
-    if (PyModule_AddObject(module, "PcscConnection",
-                           (PyObject *)&PcscConnectionType) < 0) {
+    if (PyModule_AddObject(module, "PcscConnection", (PyObject *)&PcscConnectionType) < 0) {
         Py_DECREF(&PcscConnectionType);
         Py_DECREF(module);
         return NULL;
