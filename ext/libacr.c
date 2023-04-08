@@ -16,10 +16,15 @@ typedef struct {
 static PyObject *PcscError;
 
 void PcscConnection_dealloc(PcscConnection *self) {
+    if (SCardIsValidContext(self->raw_context) == SCARD_S_SUCCESS) {
+        goto type_free;
+    }
+
     LONG err = SCardReleaseContext(self->raw_context);
     if (err != SCARD_S_SUCCESS) {
         PCSC_ERROR("SCardReleaseContext", err);
     }
+type_free:
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
