@@ -2,4 +2,5 @@ import _libacr
 
 
 def main():
-    _libacr.show_hello_world()
+    conn = _libacr.PcscConnection()
+    conn.show_hello_world()

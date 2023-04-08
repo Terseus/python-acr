@@ -1,15 +1,64 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <stdio.h>
+#include <winscard.h>
 
-static PyObject *_libacr_show_hello_world(PyObject *self, PyObject *args) {
+#define PCSC_ERROR(source, err)                                                \
+    PyErr_Format(PcscError, "PCSC error from " #source ": %ld: %s", err,       \
+                 pcsc_stringify_error(err))
+
+typedef struct {
+    // clang-format off
+    PyObject_HEAD
+    SCARDCONTEXT raw_context;
+    // clang-format on
+} PcscConnection;
+
+static PyObject *PcscError;
+
+void PcscConnection_dealloc(PcscConnection *self) {
+    LONG err = SCardReleaseContext(self->raw_context);
+    if (err != SCARD_S_SUCCESS) {
+        PCSC_ERROR("SCardReleaseContext", err);
+    }
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+static PyObject *PcscConnection_new(PyTypeObject *type, PyObject *args,
+                                    PyObject *kwargs) {
+    PcscConnection *self = NULL;
+    self = (PcscConnection *)type->tp_alloc(type, 0);
+    if (self == NULL) {
+        return NULL;
+    }
+
+    self->raw_context = 0;
+    LONG err =
+        SCardEstablishContext(SCARD_SCOPE_USER, NULL, NULL, &self->raw_context);
+    if (err != SCARD_S_SUCCESS) {
+        Py_DECREF(self);
+        PCSC_ERROR("SCardEstablishContext", err);
+        return NULL;
+    }
+
+    return (PyObject *)self;
+}
+
+static PyObject *PcscConnetion_show_hello_world(PyObject *self,
+                                                PyObject *Py_UNUSED(ignored)) {
     fprintf(stdout, "Hello world!\n");
     Py_RETURN_NONE;
 }
 
-typedef struct {
-    PyObject_HEAD
-} PcscConnection;
+static PyMethodDef PcscConnection_methods[] = {
+    {
+        .ml_name = "show_hello_world",
+        .ml_meth = (PyCFunction)PcscConnetion_show_hello_world,
+        .ml_flags = METH_NOARGS,
+        .ml_doc = "Print the string 'Hello world!\n' in stdio.",
+    },
+    {NULL}, /* Sentinel */
+};
 
 static PyTypeObject PcscConnectionType = {
     // clang-format off
@@ -20,19 +69,12 @@ static PyTypeObject PcscConnectionType = {
     .tp_basicsize = sizeof(PcscConnection),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = PyType_GenericNew,
+    .tp_new = PcscConnection_new,
+    .tp_dealloc = (destructor)PcscConnection_dealloc,
+    .tp_methods = PcscConnection_methods,
 };
 
 static PyMethodDef _LibacrMethods[] = {
-    {
-        .ml_name = "show_hello_world",
-        .ml_meth = _libacr_show_hello_world,
-        .ml_flags =
-            METH_NOARGS, /* see
-                            https://docs.python.org/3/c-api/structures.html?highlight=meth_varargs#METH_VARARGS
-                          */
-        .ml_doc = "Print the string 'Hello world!\n' in stdio.",
-    },
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -57,6 +99,15 @@ PyMODINIT_FUNC PyInit__libacr(void) {
 
     module = PyModule_Create(&_LibacrModule);
     if (module == NULL) {
+        return NULL;
+    }
+
+    PcscError = PyErr_NewException("_libacr.PcscError", NULL, NULL);
+    Py_XINCREF(PcscError);
+    if (PyModule_AddObject(module, "PcscError", PcscError) < 0) {
+        Py_XDECREF(PcscError);
+        Py_CLEAR(PcscError);
+        Py_DECREF(module);
         return NULL;
     }
 
