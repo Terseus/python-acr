@@ -5,13 +5,7 @@
 #include <Python.h>
 #include <winscard.h>
 
-typedef struct {
-    // clang-format off
-    PyObject_HEAD
-    SCARDCONTEXT raw_context;
-    // clang-format on
-} PcscConnection;
-
+typedef struct PcscConnection PcscConnection;
 extern PyTypeObject PcscConnectionType;
 
 #endif // PCSC_CONNECTION_H

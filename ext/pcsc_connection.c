@@ -1,6 +1,13 @@
 #include "pcsc_connection.h"
 #include "pcsc_error.h"
 
+struct PcscConnection {
+    // clang-format off
+    PyObject_HEAD
+    SCARDCONTEXT raw_context;
+    // clang-format on
+};
+
 void PcscConnection_dealloc(PcscConnection *self) {
     if (SCardIsValidContext(self->raw_context) != SCARD_S_SUCCESS) {
         goto type_free;
