@@ -2,7 +2,7 @@
 #include "pcsc_error.h"
 
 void PcscConnection_dealloc(PcscConnection *self) {
-    if (SCardIsValidContext(self->raw_context) == SCARD_S_SUCCESS) {
+    if (SCardIsValidContext(self->raw_context) != SCARD_S_SUCCESS) {
         goto type_free;
     }
 
