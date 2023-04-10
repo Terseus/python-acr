@@ -7,6 +7,6 @@
 #define PCSC_ERROR(source, err)                                                                    \
     PyErr_Format(PcscError, "PCSC error from " #source ": %ld: %s", err, pcsc_stringify_error(err))
 
-static PyObject *PcscError;
+extern PyObject *PcscError;
 
 #endif // PCSC_ERROR_H

@@ -6,6 +6,8 @@
 #include "pcsc_connection.h"
 #include "pcsc_error.h"
 
+PyObject *PcscError;
+
 static PyMethodDef _LibacrMethods[] = {
     {NULL, NULL, 0, NULL} /* Sentinel */
 };
