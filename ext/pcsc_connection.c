@@ -88,18 +88,7 @@ error_cleanup:
     return NULL;
 }
 
-PyObject *PcscConnetion_show_hello_world(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-    fprintf(stdout, "Hello world!\n");
-    Py_RETURN_NONE;
-}
-
 static PyMethodDef PcscConnection_methods[] = {
-    {
-        .ml_name = "show_hello_world",
-        .ml_meth = (PyCFunction)PcscConnetion_show_hello_world,
-        .ml_flags = METH_NOARGS,
-        .ml_doc = "Print the string 'Hello world!\n' in stdio.",
-    },
     {
         .ml_name = "is_valid",
         .ml_meth = (PyCFunction)PcscConnection_is_valid,
