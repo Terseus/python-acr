@@ -1,5 +1,6 @@
 #include "pcsc_connection.h"
 #include "pcsc_error.h"
+#include <string.h>
 
 struct PcscConnection {
     // clang-format off
@@ -43,6 +44,50 @@ PyObject *PcscConnection_is_valid(PcscConnection *self, PyObject *Py_UNUSED(igno
     return PyBool_FromLong(SCardIsValidContext(self->raw_context) == SCARD_S_SUCCESS);
 }
 
+PyObject *PcscConnection_list_readers(PcscConnection *self, PyObject *Py_UNUSED(ignored)) {
+    DWORD pcchReaders = SCARD_AUTOALLOCATE;
+    LPSTR ptr = NULL;
+    LONG err = SCardListReaders(self->raw_context, NULL, (LPSTR)&ptr, &pcchReaders);
+
+    if (err != SCARD_S_SUCCESS) {
+        PCSC_ERROR("SCardListReaders", err);
+        return NULL;
+    }
+
+    PyObject *ret_list = PyList_New(0);
+    if (ret_list == NULL) {
+        goto error_cleanup;
+    }
+
+    char *reader = ptr;
+    while (*reader) {
+        PyObject *item = PyUnicode_FromString(reader);
+        if (item == NULL) {
+            goto error_cleanup;
+        }
+        if (PyList_Append(ret_list, item) != 0) {
+            goto error_cleanup;
+        }
+        reader += strlen(reader) + 1;
+    }
+
+    err = SCardFreeMemory(self->raw_context, ptr);
+    if (err != SCARD_S_SUCCESS) {
+        ptr = NULL;
+        PCSC_ERROR("SCardFreeMemory", err);
+        goto error_cleanup;
+    }
+
+    return ret_list;
+
+error_cleanup:
+    Py_XDECREF(ret_list);
+    if (ptr != NULL) {
+        SCardFreeMemory(self->raw_context, ptr);
+    }
+    return NULL;
+}
+
 PyObject *PcscConnetion_show_hello_world(PyObject *self, PyObject *Py_UNUSED(ignored)) {
     fprintf(stdout, "Hello world!\n");
     Py_RETURN_NONE;
@@ -61,6 +106,12 @@ static PyMethodDef PcscConnection_methods[] = {
         .ml_flags = METH_NOARGS,
         .ml_doc = "Returns if this connection context is valid; it should always return True; used "
                   "for testing.",
+    },
+    {
+        .ml_name = "list_readers",
+        .ml_meth = (PyCFunction)PcscConnection_list_readers,
+        .ml_flags = METH_NOARGS,
+        .ml_doc = "Returns a list of currently available readers on the system.",
     },
     {NULL}, /* Sentinel */
 };
