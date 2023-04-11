@@ -6,8 +6,60 @@ struct PcscConnection {
     // clang-format off
     PyObject_HEAD
     SCARDCONTEXT raw_context;
+    PyObject *readers;
+    Py_ssize_t readers_count;
     // clang-format on
 };
+
+PyObject *get_readers(PcscConnection *conn) {
+    DWORD pcchReaders = SCARD_AUTOALLOCATE;
+    LPSTR ptr = NULL;
+    LONG err = SCardListReaders(conn->raw_context, NULL, (LPSTR)&ptr, &pcchReaders);
+
+    if (err != SCARD_S_SUCCESS) {
+        PCSC_ERROR("SCardListReaders", err);
+        return NULL;
+    }
+
+    PyObject *pylist = PyList_New(0);
+    if (pylist == NULL) {
+        goto error_cleanup;
+    }
+
+    char *reader = ptr;
+    while (*reader) {
+        PyObject *item = PyUnicode_FromString(reader);
+        if (item == NULL) {
+            goto error_cleanup;
+        }
+        if (PyList_Append(pylist, item) != 0) {
+            goto error_cleanup;
+        }
+        reader += strlen(reader) + 1;
+    }
+
+    err = SCardFreeMemory(conn->raw_context, ptr);
+    ptr = NULL;
+    if (err != SCARD_S_SUCCESS) {
+        PCSC_ERROR("SCardFreeMemory", err);
+        goto error_cleanup;
+    }
+
+    PyObject *pytuple = PyList_AsTuple(pylist);
+    if (pytuple == NULL) {
+        goto error_cleanup;
+    }
+
+    Py_DECREF(pylist);
+    return pytuple;
+
+error_cleanup:
+    Py_XDECREF(pylist);
+    if (ptr != NULL) {
+        SCardFreeMemory(conn->raw_context, ptr);
+    }
+    return NULL;
+}
 
 void PcscConnection_dealloc(PcscConnection *self) {
     if (SCardIsValidContext(self->raw_context) != SCARD_S_SUCCESS) {
@@ -37,6 +89,13 @@ PyObject *PcscConnection_new(PyTypeObject *type, PyObject *args, PyObject *kwarg
         return NULL;
     }
 
+    self->readers = get_readers(self);
+    if (self->readers == NULL) {
+        Py_DECREF(self);
+        return NULL;
+    }
+    self->readers_count = PyTuple_Size(self->readers);
+
     return (PyObject *)self;
 }
 
@@ -45,47 +104,8 @@ PyObject *PcscConnection_is_valid(PcscConnection *self, PyObject *Py_UNUSED(igno
 }
 
 PyObject *PcscConnection_list_readers(PcscConnection *self, PyObject *Py_UNUSED(ignored)) {
-    DWORD pcchReaders = SCARD_AUTOALLOCATE;
-    LPSTR ptr = NULL;
-    LONG err = SCardListReaders(self->raw_context, NULL, (LPSTR)&ptr, &pcchReaders);
-
-    if (err != SCARD_S_SUCCESS) {
-        PCSC_ERROR("SCardListReaders", err);
-        return NULL;
-    }
-
-    PyObject *ret_list = PyList_New(0);
-    if (ret_list == NULL) {
-        goto error_cleanup;
-    }
-
-    char *reader = ptr;
-    while (*reader) {
-        PyObject *item = PyUnicode_FromString(reader);
-        if (item == NULL) {
-            goto error_cleanup;
-        }
-        if (PyList_Append(ret_list, item) != 0) {
-            goto error_cleanup;
-        }
-        reader += strlen(reader) + 1;
-    }
-
-    err = SCardFreeMemory(self->raw_context, ptr);
-    if (err != SCARD_S_SUCCESS) {
-        ptr = NULL;
-        PCSC_ERROR("SCardFreeMemory", err);
-        goto error_cleanup;
-    }
-
-    return ret_list;
-
-error_cleanup:
-    Py_XDECREF(ret_list);
-    if (ptr != NULL) {
-        SCardFreeMemory(self->raw_context, ptr);
-    }
-    return NULL;
+    Py_INCREF(self->readers);
+    return self->readers;
 }
 
 static PyMethodDef PcscConnection_methods[] = {
